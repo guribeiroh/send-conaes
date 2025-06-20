@@ -4,16 +4,20 @@ import ProspectionCounter from '@/components/ProspectionCounter';
 import EvolutionConfigModal from '@/components/EvolutionConfigModal';
 import EvolutionInstructions from '@/components/EvolutionInstructions';
 import MessageTemplateManager from '@/components/MessageTemplateManager';
+import WhatsAppQueueDashboard from '@/components/WhatsAppQueueDashboard';
+import BulkCampaignManager from '@/components/BulkCampaignManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap, MessageSquare, Clock, User, AlertCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Zap, MessageSquare, Clock, User, AlertCircle, Activity, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMessageHistory, formatRelativeTime } from '@/hooks/useWebhookExecutions';
-import React from 'react';
+import React, { useState } from 'react';
 
 const Index = () => {
   const navigate = useNavigate();
   const { data: messageHistory, isLoading: isLoadingHistory } = useMessageHistory();
+  const [activeTab, setActiveTab] = useState('prospection');
 
   // Debug logs
   React.useEffect(() => {
@@ -85,7 +89,7 @@ const Index = () => {
               Prospecção Ativa Conaes
             </h1>
             <p className="text-gray-400 text-xs">
-              Sistema de disparo automático
+              Sistema de disparo automático com fila anti-bloqueio
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -105,121 +109,162 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Conteúdo Principal - Layout 3 Colunas Expandido */}
-      <div className="flex-1 flex px-3 gap-3 min-h-0 py-2">
-        {/* Coluna 1 - Contador Expandido */}
-        <div className="flex-1 min-w-0">
-          <div className="h-full">
-            <ProspectionCounter />
-          </div>
-        </div>
+      {/* Sistema de Abas */}
+      <div className="flex-1 px-3 py-2 min-h-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-800 border-gray-700">
+            <TabsTrigger 
+              value="prospection" 
+              className="flex items-center gap-2 data-[state=active]:bg-green-600 data-[state=active]:text-white"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Prospecção
+            </TabsTrigger>
+            <TabsTrigger 
+              value="queue" 
+              className="flex items-center gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              <Activity className="w-4 h-4" />
+              Fila WhatsApp
+            </TabsTrigger>
+            <TabsTrigger 
+              value="campaigns" 
+              className="flex items-center gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+            >
+              <Users className="w-4 h-4" />
+              Campanhas
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Coluna 2 - Formulário Expandido */}
-        <div className="flex-1 min-w-0">
-          <div className="h-full flex items-center justify-center">
-            <div className="w-full max-w-lg">
-              <WebhookForm />
-            </div>
-          </div>
-        </div>
+          {/* Aba de Prospecção (Layout Original) */}
+          <TabsContent value="prospection" className="flex-1 min-h-0 mt-3">
+            <div className="h-full flex gap-3">
+              {/* Coluna 1 - Contador Expandido */}
+              <div className="flex-1 min-w-0">
+                <div className="h-full">
+                  <ProspectionCounter />
+                </div>
+              </div>
 
-        {/* Coluna 3 - Feed Histórico Expandido */}
-        <div className="flex-1 min-w-0">
-          <Card className="bg-gray-800 border-gray-700 h-full flex flex-col">
-            <CardHeader className="pb-2 flex-shrink-0">
-              <CardTitle className="flex items-center justify-between text-sm font-semibold text-gray-200">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-blue-400" />
-                  Mensagens Enviadas
+              {/* Coluna 2 - Formulário Expandido */}
+              <div className="flex-1 min-w-0">
+                <div className="h-full flex items-center justify-center">
+                  <div className="w-full max-w-lg">
+                    <WebhookForm />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      console.log('🔄 [DEBUG] Forçando refresh do feed...');
-                      window.location.reload();
-                    }}
-                    className="h-6 px-2 text-xs border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white"
-                  >
-                    🔄 Refresh
-                  </Button>
-                  {messageHistory && (
-                    <span className="text-xs text-gray-400">
-                      {messageHistory.length} total
-                    </span>
-                  )}
-                </div>
-              </CardTitle>
-            </CardHeader>
-            
-            <CardContent className="flex-1 overflow-y-auto space-y-2 pb-3 scrollbar-sexy">
-              {isLoadingHistory ? (
-                <div className="text-center py-8 text-gray-400">
-                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                  <p className="text-sm">Carregando histórico...</p>
-                </div>
-              ) : messageHistory && messageHistory.length > 0 ? (
-                messageHistory.map((msg) => (
-                  <div key={msg.id} className="bg-gray-700 rounded-lg p-3 border border-gray-600 hover:bg-gray-650 transition-colors">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <User className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                        <span className="text-sm font-medium text-gray-200 truncate">
-                          {msg.name}
-                        </span>
-                        {msg.contact_count && msg.contact_count > 1 && (
-                          <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                            {msg.contact_count}x
+              </div>
+
+              {/* Coluna 3 - Feed Histórico Expandido */}
+              <div className="flex-1 min-w-0">
+                <Card className="bg-gray-800 border-gray-700 h-full flex flex-col">
+                  <CardHeader className="pb-2 flex-shrink-0">
+                    <CardTitle className="flex items-center justify-between text-sm font-semibold text-gray-200">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-blue-400" />
+                        Mensagens Enviadas
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            console.log('🔄 [DEBUG] Forçando refresh do feed...');
+                            window.location.reload();
+                          }}
+                          className="h-6 px-2 text-xs border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white"
+                        >
+                          🔄 Refresh
+                        </Button>
+                        {messageHistory && (
+                          <span className="text-xs text-gray-400">
+                            {messageHistory.length} total
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        {getStatusIcon(msg.status)}
+                    </CardTitle>
+                  </CardHeader>
+                  
+                  <CardContent className="flex-1 overflow-y-auto space-y-2 pb-3 scrollbar-sexy">
+                    {isLoadingHistory ? (
+                      <div className="text-center py-8 text-gray-400">
+                        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                        <p className="text-sm">Carregando histórico...</p>
                       </div>
-                    </div>
-                    
-                    <div className="text-xs text-gray-400 mb-2 truncate">
-                      📞 {formatPhone(msg.phone)}
-                    </div>
-                    
-                    <div className="text-xs text-gray-300 mb-2">
-                      <div className="font-medium text-gray-200 mb-1">Mensagem enviada:</div>
-                                             <div className="bg-gray-600 rounded p-2 max-h-24 overflow-y-auto whitespace-pre-wrap text-xs scrollbar-message">
-                        {msg.message}
+                    ) : messageHistory && messageHistory.length > 0 ? (
+                      messageHistory.map((msg) => (
+                        <div key={msg.id} className="bg-gray-700 rounded-lg p-3 border border-gray-600 hover:bg-gray-650 transition-colors">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <User className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                              <span className="text-sm font-medium text-gray-200 truncate">
+                                {msg.name}
+                              </span>
+                              {msg.contact_count && msg.contact_count > 1 && (
+                                <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                                  {msg.contact_count}x
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {getStatusIcon(msg.status)}
+                            </div>
+                          </div>
+                          
+                          <div className="text-xs text-gray-400 mb-2 truncate">
+                            📞 {formatPhone(msg.phone)}
+                          </div>
+                          
+                          <div className="text-xs text-gray-300 mb-2">
+                            <div className="font-medium text-gray-200 mb-1">Mensagem enviada:</div>
+                            <div className="bg-gray-600 rounded p-2 max-h-24 overflow-y-auto whitespace-pre-wrap text-xs scrollbar-message">
+                              {msg.message}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {formatRelativeTime(msg.created_at)}
+                            </span>
+                            {msg.source && (
+                              <span className="text-xs text-gray-500 bg-gray-600 px-1.5 py-0.5 rounded">
+                                {msg.source === 'webhook_execution' ? '🎯 Prospecção' : '📞 Contato'}
+                              </span>
+                            )}
+                            <span className={`text-xs font-medium ${getStatusColor(msg.status)}`}>
+                              {getStatusText(msg.status)}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-12 text-gray-400">
+                        <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p className="text-lg font-medium mb-2">Nenhuma mensagem ainda</p>
+                        <p className="text-sm">As mensagens enviadas aparecerão aqui</p>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatRelativeTime(msg.created_at)}
-                      </span>
-                      {msg.source && (
-                        <span className="text-xs text-gray-500 bg-gray-600 px-1.5 py-0.5 rounded">
-                          {msg.source === 'webhook_execution' ? '🎯 Prospecção' : '📞 Contato'}
-                        </span>
-                      )}
-                      {msg.message?.includes('Mensagem personalizada:') && (
-                        <span className="text-xs text-purple-400 bg-purple-900 px-1.5 py-0.5 rounded">
-                          ✨ Personalizada
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-12 text-gray-400">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">Nenhuma mensagem enviada ainda</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    As mensagens aparecerão aqui após o envio
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Aba da Fila WhatsApp */}
+          <TabsContent value="queue" className="flex-1 min-h-0 mt-3">
+            <div className="h-full overflow-y-auto">
+              <WhatsAppQueueDashboard />
+            </div>
+          </TabsContent>
+
+          {/* Aba de Campanhas */}
+          <TabsContent value="campaigns" className="flex-1 min-h-0 mt-3">
+            <div className="h-full overflow-y-auto">
+              <BulkCampaignManager />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Footer Mínimo */}
